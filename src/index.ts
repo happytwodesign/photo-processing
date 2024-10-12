@@ -1,5 +1,6 @@
 import express from 'express';
 import multer from 'multer';
+import cors from 'cors';
 import { processPhoto } from './processPhoto';
 import { loadModels } from './loadModels';
 import fs from 'fs/promises';
@@ -8,6 +9,20 @@ import crypto from 'crypto';
 import { cleanupOldFiles } from './cleanup';
 
 const app = express();
+
+// Updated CORS configuration
+app.use(cors({
+  origin: [
+    'https://schengenvisaphoto.com',
+    'https://photoforvisa.com',
+    'https://vercel.live',
+    'https://schengen-visa-photo-generator-s6s7oko2k.vercel.app',
+    'http://localhost:3000'
+  ],
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 const upload = multer();
 const port = process.env.PORT || 3002;
 

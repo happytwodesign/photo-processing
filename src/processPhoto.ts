@@ -31,10 +31,14 @@ export async function processPhoto(photoBuffer: Buffer, config: any): Promise<st
     
     cropBox = {
       left: Math.max(0, Math.round(centerX - cropWidth / 2)),
-      top: Math.max(0, Math.round(centerY - cropHeight / 2)),
+      top: Math.max(0, Math.round(centerY - cropHeight * 0.4)), // Position face slightly above center
       width: Math.round(cropWidth),
       height: Math.round(cropHeight)
     };
+
+    // Ensure the crop box doesn't exceed image boundaries
+    cropBox.left = Math.min(cropBox.left, originalWidth - cropBox.width);
+    cropBox.top = Math.min(cropBox.top, originalHeight - cropBox.height);
   } else {
     console.warn('No face detected. Proceeding with center crop.');
     // Calculate crop dimensions for center crop
@@ -52,7 +56,7 @@ export async function processPhoto(photoBuffer: Buffer, config: any): Promise<st
   // Apply crop
   image = image.extract(cropBox);
 
-  // Resize to 35x45 aspect ratio, preserving maximum size
+  // Resize to 35x45 aspect ratio, preserving maximum size with a minimum of 350x450
   const targetWidth = Math.max(350, cropBox.width);
   const targetHeight = Math.round(targetWidth * (45 / 35));
   image = image.resize(targetWidth, targetHeight, { fit: 'fill' });

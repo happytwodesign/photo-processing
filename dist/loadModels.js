@@ -29,16 +29,17 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.loadModels = void 0;
 const faceapi = __importStar(require("face-api.js"));
 const path_1 = __importDefault(require("path"));
+const canvas_1 = require("canvas");
+// Polyfill for faceapi in Node environment
+faceapi.env.monkeyPatch({ Canvas: canvas_1.Canvas, Image: canvas_1.Image });
 let modelsLoaded = false;
 async function loadModels() {
     if (modelsLoaded)
         return;
     const modelsPath = path_1.default.join(process.cwd(), 'src', 'models');
     try {
-        // Load SSD MobileNet v1 model
-        await faceapi.nets.ssdMobilenetv1.loadFromUri(modelsPath);
-        // Load Face Landmark 68 model
-        await faceapi.nets.faceLandmark68Net.loadFromUri(modelsPath);
+        await faceapi.nets.faceLandmark68Net.loadFromDisk(modelsPath);
+        await faceapi.nets.ssdMobilenetv1.loadFromDisk(modelsPath);
         modelsLoaded = true;
         console.log('Face-api models loaded successfully');
     }
