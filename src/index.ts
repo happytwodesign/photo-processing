@@ -4,6 +4,8 @@ import { processPhoto } from './processPhoto';
 import { loadModels } from './loadModels';
 import fs from 'fs/promises';
 import path from 'path';
+import crypto from 'crypto';
+import { cleanupOldFiles } from './cleanup';
 
 const app = express();
 const upload = multer();
@@ -11,6 +13,11 @@ const port = process.env.PORT || 3002;
 
 // Load face-api models when the server starts
 loadModels().catch(console.error);
+
+// Add this function at the top of the file
+function generateUniqueId(): string {
+  return crypto.randomBytes(16).toString('hex');
+}
 
 app.post('/process-photo', upload.single('photo'), async (req, res) => {
   try {
@@ -21,14 +28,14 @@ app.post('/process-photo', upload.single('photo'), async (req, res) => {
     const config = JSON.parse(req.body.config || '{}');
     const processedImageBase64 = await processPhoto(req.file.buffer, config);
 
-    // Save the processed image to a file
-    const imagePath = path.join(__dirname, '..', 'processed_images', `processed_${Date.now()}.png`);
+    const uniqueId = generateUniqueId();
+    const imagePath = path.join(__dirname, '..', 'processed_images', `${uniqueId}.png`);
     await fs.mkdir(path.dirname(imagePath), { recursive: true });
     await fs.writeFile(imagePath, Buffer.from(processedImageBase64, 'base64'));
 
     res.json({ 
       photoUrl: `data:image/png;base64,${processedImageBase64}`,
-      downloadUrl: `/download-image?path=${encodeURIComponent(imagePath)}`
+      downloadUrl: `/download-image/${uniqueId}`
     });
   } catch (error) {
     console.error('Error processing photo:', error);
@@ -36,14 +43,20 @@ app.post('/process-photo', upload.single('photo'), async (req, res) => {
   }
 });
 
-app.get('/download-image', async (req, res) => {
-  const imagePath = req.query.path as string;
-  if (!imagePath) {
-    return res.status(400).send('Missing image path');
+app.get('/download-image/:id', async (req, res) => {
+  const id = req.params.id;
+  const imagePath = path.join(__dirname, '..', 'processed_images', `${id}.png`);
+  
+  try {
+    await fs.access(imagePath);
+    res.download(imagePath);
+  } catch (error) {
+    res.status(404).send('Image not found');
   }
-  res.download(imagePath);
 });
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
+  // Run cleanup every hour
+  setInterval(cleanupOldFiles, 60 * 60 * 1000);
 });
