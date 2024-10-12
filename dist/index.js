@@ -20,6 +20,7 @@ app.use((0, cors_1.default)({
         'https://photoforvisa.com',
         'https://vercel.live',
         'https://schengen-visa-photo-generator-s6s7oko2k.vercel.app',
+        'https://schengen-visa-photo-generator.vercel.app',
         'http://localhost:3000'
     ],
     methods: ['GET', 'POST'],
