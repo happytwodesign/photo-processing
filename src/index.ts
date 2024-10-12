@@ -18,7 +18,8 @@ app.use(cors({
     'https://vercel.live',
     'https://schengen-visa-photo-generator-s6s7oko2k.vercel.app',
     'https://schengen-visa-photo-generator.vercel.app',
-    'http://localhost:3000'
+    'http://localhost:3000',
+    'https://visa-photo-generator-pbq02754w-alexandrap-toptalcoms-projects.vercel.app'
   ],
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type', 'Authorization']
