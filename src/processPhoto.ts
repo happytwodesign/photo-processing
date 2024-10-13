@@ -22,12 +22,14 @@ export async function processPhoto(photoBuffer: Buffer, config: any): Promise<st
   if (detections) {
     console.log('Face detected, adjusting image...');
     const faceBox = detections.detection.box;
+    const faceHeight = faceBox.height;
+    
+    // Calculate crop dimensions based on face height (70% of image height)
+    const cropHeight = faceHeight / 0.7;
+    const cropWidth = cropHeight * (35 / 45);
+    
     const centerX = faceBox.x + faceBox.width / 2;
     const centerY = faceBox.y + faceBox.height / 2;
-    
-    // Calculate crop dimensions based on face position
-    const cropWidth = Math.min(originalWidth, originalHeight * (35 / 45));
-    const cropHeight = cropWidth * (45 / 35);
     
     cropBox = {
       left: Math.max(0, Math.round(centerX - cropWidth / 2)),
@@ -42,12 +44,12 @@ export async function processPhoto(photoBuffer: Buffer, config: any): Promise<st
   } else {
     console.warn('No face detected. Proceeding with center crop.');
     // Calculate crop dimensions for center crop
-    const cropWidth = Math.min(originalWidth, originalHeight * (35 / 45));
-    const cropHeight = cropWidth * (45 / 35);
+    const cropHeight = originalHeight;
+    const cropWidth = cropHeight * (35 / 45);
     
     cropBox = {
       left: Math.round((originalWidth - cropWidth) / 2),
-      top: Math.round((originalHeight - cropHeight) / 2),
+      top: 0,
       width: Math.round(cropWidth),
       height: Math.round(cropHeight)
     };
