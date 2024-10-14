@@ -6,7 +6,7 @@ import { loadModels } from './loadModels';
 import path from 'path';
 import crypto from 'crypto';
 import { cleanupOldFiles } from './cleanup';
-import '@tensorflow/tfjs-node';
+
 
 const app = express();
 
@@ -25,7 +25,7 @@ app.use(cors({
 }));
 
 const upload = multer();
-const port = process.env.PORT || 3002;
+const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3002;
 
 // Load face-api models when the server starts
 loadModels().catch(console.error);
@@ -87,7 +87,7 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   res.status(500).json({ error: 'An unexpected error occurred', details: err.message });
 });
 
-app.listen(port, () => {
+app.listen(port, '0.0.0.0', () => {
   console.log(`Server is running on port ${port}`);
   // Run cleanup every hour
   setInterval(cleanupOldFiles, 60 * 60 * 1000);
