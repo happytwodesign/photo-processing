@@ -7,13 +7,10 @@
     "build": "tsc",
     "dev": "ts-node src/index.ts"
   },
-  "dependencies": {
-<<<<<<< HEAD
-    "@tensorflow/tfjs-node": "^4.21.0",
-    "canvas": "^2.9.0",
-    "@tensorflow/tfjs": "^4.21.0",
-    "canvas": "^2.9.1",
->>>>>>> 9f0dd72cfdb4e061d2b0914eee011dc0be7e266
+    "dependencies": {
+       "@tensorflow/tfjs": "^4.21.0",
+       "@tensorflow/tfjs-node": "^4.21.0",
+       "canvas": "^2.9.1",
     "cors": "^2.8.5",
     "express": "^4.17.1",
     "face-api.js": "^0.22.2",
