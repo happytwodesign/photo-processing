@@ -6,6 +6,7 @@ import { loadModels } from './loadModels';
 import path from 'path';
 import crypto from 'crypto';
 import { cleanupOldFiles } from './cleanup';
+import '@tensorflow/tfjs-node';
 
 const app = express();
 
