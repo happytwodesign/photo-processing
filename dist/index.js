@@ -8,7 +8,6 @@ const multer_1 = __importDefault(require("multer"));
 const cors_1 = __importDefault(require("cors"));
 const processPhoto_1 = require("./processPhoto");
 const loadModels_1 = require("./loadModels");
-const promises_1 = __importDefault(require("fs/promises"));
 const path_1 = __importDefault(require("path"));
 const crypto_1 = __importDefault(require("crypto"));
 const cleanup_1 = require("./cleanup");
@@ -21,8 +20,7 @@ app.use((0, cors_1.default)({
         'https://vercel.live',
         'https://schengen-visa-photo-generator-s6s7oko2k.vercel.app',
         'https://schengen-visa-photo-generator.vercel.app',
-        'http://localhost:3000',
-        'https://visa-photo-generator-pbq02754w-alexandrap-toptalcoms-projects.vercel.app'
+        'http://localhost:3000'
     ],
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type', 'Authorization']
@@ -31,41 +29,54 @@ const upload = (0, multer_1.default)();
 const port = process.env.PORT || 3002;
 // Load face-api models when the server starts
 (0, loadModels_1.loadModels)().catch(console.error);
-// Add this function at the top of the file
 function generateUniqueId() {
     return crypto_1.default.randomBytes(16).toString('hex');
 }
 app.post('/process-photo', upload.single('photo'), async (req, res) => {
     try {
+        console.log('Received request to /process-photo');
         if (!req.file) {
+            console.log('No file received');
             return res.status(400).json({ error: 'Missing photo' });
         }
+        console.log(`Received photo of size: ${req.file.size} bytes`);
         const config = JSON.parse(req.body.config || '{}');
+        console.log('Processing photo with config:', config);
         const processedImageBase64 = await (0, processPhoto_1.processPhoto)(req.file.buffer, config);
+        console.log('Photo processed successfully');
         const uniqueId = generateUniqueId();
-        const imagePath = path_1.default.join(__dirname, '..', 'processed_images', `${uniqueId}.png`);
-        await promises_1.default.mkdir(path_1.default.dirname(imagePath), { recursive: true });
-        await promises_1.default.writeFile(imagePath, Buffer.from(processedImageBase64, 'base64'));
+        console.log(`Generated unique ID: ${uniqueId}`);
         res.json({
             photoUrl: `data:image/png;base64,${processedImageBase64}`,
             downloadUrl: `/download-image/${uniqueId}`
         });
+        console.log('Response sent successfully');
     }
     catch (error) {
-        console.error('Error processing photo:', error);
-        res.status(500).json({ error: 'Failed to process photo' });
+        console.error('Error in /process-photo route:', error);
+        if (error instanceof Error) {
+            console.error(error.stack);
+            res.status(500).json({ error: 'Failed to process photo', details: error.message });
+        }
+        else {
+            res.status(500).json({ error: 'Failed to process photo', details: 'An unknown error occurred' });
+        }
     }
 });
 app.get('/download-image/:id', async (req, res) => {
     const id = req.params.id;
     const imagePath = path_1.default.join(__dirname, '..', 'processed_images', `${id}.png`);
     try {
-        await promises_1.default.access(imagePath);
-        res.download(imagePath);
+        res.sendFile(imagePath);
     }
     catch (error) {
         res.status(404).send('Image not found');
     }
+});
+// Global error handler
+app.use((err, req, res, next) => {
+    console.error('Unhandled error:', err);
+    res.status(500).json({ error: 'An unexpected error occurred', details: err.message });
 });
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
