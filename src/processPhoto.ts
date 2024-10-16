@@ -6,9 +6,14 @@ import { Canvas, Image, loadImage } from 'canvas';
 faceapi.env.monkeyPatch({ Canvas, Image } as any);
 
 export async function processPhoto(photoBuffer: Buffer, config: any): Promise<string> {
+  let image: sharp.Sharp | null = null;
+  let inputBuffer: Buffer | null = null;
+  let img: Image | null = null;
+  let detections: faceapi.WithFaceLandmarks<{ detection: faceapi.FaceDetection; }> | undefined;
+
   try {
     console.log('Starting photo processing');
-    let image = sharp(photoBuffer);
+    image = sharp(photoBuffer);
     
     // Get image metadata
     const metadata = await image.metadata();
@@ -31,9 +36,9 @@ export async function processPhoto(photoBuffer: Buffer, config: any): Promise<st
     image = image.resize(resizeWidth, resizeHeight, { fit: 'cover' });
 
     console.log('Step 2: Detecting face');
-    const inputBuffer = await image.toBuffer();
-    const img = await loadImage(inputBuffer);
-    const detections = await faceapi.detectSingleFace(img as any).withFaceLandmarks();
+    inputBuffer = await image.toBuffer();
+    img = await loadImage(inputBuffer);
+    detections = await faceapi.detectSingleFace(img as any).withFaceLandmarks();
 
     if (detections) {
       console.log('Face detected. Adjusting image...');
