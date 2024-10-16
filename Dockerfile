@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
    FROM node:18
 
    # Install dependencies for canvas
@@ -22,7 +22,7 @@
    EXPOSE 3002
 
    CMD ["node", "dist/index.js"]
-=======
+
 # Use an official Node.js runtime as the base image
 FROM node:18.20.4
 
@@ -59,4 +59,4 @@ EXPOSE 3002
 
 # Command to run the application
 CMD ["node", "--expose-gc", "dist/index.js"]
->>>>>>> origin/main
+
