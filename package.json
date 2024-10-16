@@ -3,9 +3,10 @@
   "version": "1.0.0",
   "main": "dist/index.js",
   "scripts": {
-    "start": "node dist/index.js",
+    "start": "node --expose-gc dist/index.js",
     "build": "tsc",
-    "dev": "ts-node src/index.ts"
+    "dev": "node --expose-gc -r ts-node/register src/index.ts",
+    "start:prod": "npm run build && npm start"
   },
   "dependencies": {
     "@tensorflow/tfjs": "^4.21.0",

@@ -11,6 +11,7 @@ const loadModels_1 = require("./loadModels");
 const path_1 = __importDefault(require("path"));
 const crypto_1 = __importDefault(require("crypto"));
 const cleanup_1 = require("./cleanup");
+const fs = require('fs');
 const app = (0, express_1.default)();
 // Updated CORS configuration
 app.use((0, cors_1.default)({
@@ -83,3 +84,17 @@ app.listen(port, () => {
     // Run cleanup every hour
     setInterval(cleanup_1.cleanupOldFiles, 60 * 60 * 1000);
 });
+
+function ensureDirectoryExists(directory) {
+  if (!fs.existsSync(directory)) {
+    fs.mkdirSync(directory, { recursive: true });
+  }
+}
+
+// In your cleanup function or wherever you're scanning the directory
+function cleanupOldFiles() {
+  const processedImagesDir = path.join(__dirname, '..', 'processed_images');
+  ensureDirectoryExists(processedImagesDir);
+  
+  // ... (rest of your cleanup logic)
+}
