@@ -26,7 +26,7 @@ app.use((0, cors_1.default)({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 const upload = (0, multer_1.default)();
-const port = process.env.PORT || 3002;
+const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3002;
 // Load face-api models when the server starts
 (0, loadModels_1.loadModels)().catch(console.error);
 function generateUniqueId() {
@@ -78,7 +78,7 @@ app.use((err, req, res, next) => {
     console.error('Unhandled error:', err);
     res.status(500).json({ error: 'An unexpected error occurred', details: err.message });
 });
-app.listen(port, () => {
+app.listen(port, '0.0.0.0', () => {
     console.log(`Server is running on port ${port}`);
     // Run cleanup every hour
     setInterval(cleanup_1.cleanupOldFiles, 60 * 60 * 1000);
