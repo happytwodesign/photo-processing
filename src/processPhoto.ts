@@ -101,3 +101,4 @@ export async function processPhoto(photoBuffer: Buffer, config: any): Promise<st
     throw error;
   }
 }
+
