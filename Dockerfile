@@ -1,32 +1,28 @@
-<<<<<<< HEAD
 
-   FROM node:18
+FROM node:18
 
-   # Install dependencies for canvas
-   RUN apt-get update && apt-get install -y \
-       libcairo2-dev \
-       libpango1.0-dev \
-       libjpeg-dev \
-       libgif-dev \
-       librsvg2-dev
+# Install dependencies for canvas
+RUN apt-get update && apt-get install -y \
+    libcairo2-dev \
+    libpango1.0-dev \
+    libjpeg-dev \
+    libgif-dev \
+    librsvg2-dev
 
-   WORKDIR /usr/src/app
+WORKDIR /usr/src/app
 
-   COPY package*.json ./
+COPY package*.json ./
 
-   RUN npm install
+RUN npm install
 
-   COPY . .
+COPY . .
 
-   RUN npm run build
+RUN npm run build
 
-   EXPOSE 3002
+EXPOSE 3002
 
-   CMD ["node", "dist/index.js"]
+CMD ["node", "dist/index.js"]
 
-=======
-cat > Dockerfile << EOL
->>>>>>> 1d31512 (Describe your changes here)
 # Use an official Node.js runtime as the base image
 FROM node:18.20.4
 
@@ -63,8 +59,4 @@ EXPOSE 3002
 
 # Command to run the application
 CMD ["node", "--expose-gc", "dist/index.js"]
-<<<<<<< HEAD
 
-=======
-EOL
->>>>>>> 1d31512 (Describe your changes here)
