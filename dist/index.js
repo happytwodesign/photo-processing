@@ -1,4 +1,13 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -11,29 +20,34 @@ const loadModels_1 = require("./loadModels");
 const path_1 = __importDefault(require("path"));
 const crypto_1 = __importDefault(require("crypto"));
 const cleanup_1 = require("./cleanup");
-const fs = require('fs');
 const app = (0, express_1.default)();
-// Updated CORS configuration
-app.use((0, cors_1.default)({
-    origin: [
-        'https://schengenvisaphoto.com',
-        'https://photoforvisa.com',
-        'https://vercel.live',
-        'https://schengen-visa-photo-generator-s6s7oko2k.vercel.app',
-        'https://schengen-visa-photo-generator.vercel.app',
-        'http://localhost:3000'
-    ],
-    methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
+// Allow all origins
+app.use((0, cors_1.default)());
+// Memory usage logging
+app.use((req, res, next) => {
+    const memUsage = process.memoryUsage();
+    console.log(`Memory usage: ${Math.round(memUsage.heapUsed / 1024 / 1024 * 100) / 100} MB`);
+    next();
+});
 const upload = (0, multer_1.default)();
 const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3002;
 // Load face-api models when the server starts
-(0, loadModels_1.loadModels)().catch(console.error);
+(function () {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            yield (0, loadModels_1.loadModels)();
+            console.log('Face-api models loaded successfully');
+        }
+        catch (error) {
+            console.error('Failed to load face-api models:', error);
+            process.exit(1); // Exit if models fail to load
+        }
+    });
+})();
 function generateUniqueId() {
     return crypto_1.default.randomBytes(16).toString('hex');
 }
-app.post('/process-photo', upload.single('photo'), async (req, res) => {
+app.post('/process-photo', upload.single('photo'), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         console.log('Received request to /process-photo');
         if (!req.file) {
@@ -43,13 +57,12 @@ app.post('/process-photo', upload.single('photo'), async (req, res) => {
         console.log(`Received photo of size: ${req.file.size} bytes`);
         const config = JSON.parse(req.body.config || '{}');
         console.log('Processing photo with config:', config);
-        const processedImageBase64 = await (0, processPhoto_1.processPhoto)(req.file.buffer, config);
+        const processedImageBase64 = yield (0, processPhoto_1.processPhoto)(req.file.buffer, config);
         console.log('Photo processed successfully');
         const uniqueId = generateUniqueId();
         console.log(`Generated unique ID: ${uniqueId}`);
         res.json({
-            photoUrl: `data:image/png;base64,${processedImageBase64}`,
-            downloadUrl: `/download-image/${uniqueId}`
+            photoUrl: `data:image/png;base64,${processedImageBase64}`
         });
         console.log('Response sent successfully');
     }
@@ -63,8 +76,14 @@ app.post('/process-photo', upload.single('photo'), async (req, res) => {
             res.status(500).json({ error: 'Failed to process photo', details: 'An unknown error occurred' });
         }
     }
-});
-app.get('/download-image/:id', async (req, res) => {
+    finally {
+        // Suggest garbage collection
+        if (global.gc) {
+            global.gc();
+        }
+    }
+}));
+app.get('/download-image/:id', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const id = req.params.id;
     const imagePath = path_1.default.join(__dirname, '..', 'processed_images', `${id}.png`);
     try {
@@ -73,7 +92,7 @@ app.get('/download-image/:id', async (req, res) => {
     catch (error) {
         res.status(404).send('Image not found');
     }
-});
+}));
 // Global error handler
 app.use((err, req, res, next) => {
     console.error('Unhandled error:', err);
@@ -84,17 +103,3 @@ app.listen(port, '0.0.0.0', () => {
     // Run cleanup every hour
     setInterval(cleanup_1.cleanupOldFiles, 60 * 60 * 1000);
 });
-
-function ensureDirectoryExists(directory) {
-  if (!fs.existsSync(directory)) {
-    fs.mkdirSync(directory, { recursive: true });
-  }
-}
-
-// In your cleanup function or wherever you're scanning the directory
-function cleanupOldFiles() {
-  const processedImagesDir = path.join(__dirname, '..', 'processed_images');
-  ensureDirectoryExists(processedImagesDir);
-  
-  // ... (rest of your cleanup logic)
-}
