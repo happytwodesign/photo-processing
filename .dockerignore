@@ -5,7 +5,12 @@
 =======
 node_modules
 npm-debug.log
+
+# Build output
 dist
+build
+
+# Version control
 .git
 .gitignore
 >>>>>>> origin/main
