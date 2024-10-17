@@ -30,7 +30,7 @@
          // Step 3: Calculate crop area based on face position
          const faceHeight = faceBox.height;
          const estimatedHeadHeight = faceHeight * 1.6; // Increased to account for more hair and head space
-         const targetHeightRatio = 0.65; // Face should occupy 65% of image height, allowing space for full head and shoulders
+         const targetHeightRatio = 0.70; // Face should occupy 65% of image height, allowing space for full head and shoulders
          
          const idealHeight = estimatedHeadHeight / targetHeightRatio;
          const idealWidth = idealHeight * (35 / 45);
