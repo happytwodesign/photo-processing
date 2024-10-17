@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 
    FROM node:18
 
@@ -23,6 +24,9 @@
 
    CMD ["node", "dist/index.js"]
 
+=======
+cat > Dockerfile << EOL
+>>>>>>> 1d31512 (Describe your changes here)
 # Use an official Node.js runtime as the base image
 FROM node:18.20.4
 
@@ -59,4 +63,8 @@ EXPOSE 3002
 
 # Command to run the application
 CMD ["node", "--expose-gc", "dist/index.js"]
+<<<<<<< HEAD
 
+=======
+EOL
+>>>>>>> 1d31512 (Describe your changes here)
