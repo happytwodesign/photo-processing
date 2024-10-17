@@ -6,95 +6,80 @@ import { Canvas, Image, loadImage } from 'canvas';
 faceapi.env.monkeyPatch({ Canvas, Image } as any);
 
 export async function processPhoto(photoBuffer: Buffer, config: any): Promise<string> {
-  let image: sharp.Sharp | null = null;
-  let inputBuffer: Buffer | null = null;
-  let img: Image | null = null;
-  let detections: faceapi.WithFaceLandmarks<{ detection: faceapi.FaceDetection; }> | undefined;
-
   try {
     console.log('Starting photo processing');
-    image = sharp(photoBuffer);
     
-    // Get image metadata
+    // Step 1: Load the image and get metadata
+    let image = sharp(photoBuffer);
     const metadata = await image.metadata();
     const originalWidth = metadata.width!;
     const originalHeight = metadata.height!;
     console.log(`Original image size: ${originalWidth}x${originalHeight}`);
 
-    // Calculate initial resize dimensions
-    const aspectRatio = 35 / 45;
-    let resizeWidth, resizeHeight;
-    if (originalWidth / originalHeight > aspectRatio) {
-      resizeHeight = Math.max(450, originalHeight);
-      resizeWidth = Math.round(resizeHeight * aspectRatio);
-    } else {
-      resizeWidth = Math.max(350, originalWidth);
-      resizeHeight = Math.round(resizeWidth / aspectRatio);
-    }
-
-    console.log(`Step 1: Resizing image to 35:45 ratio (${resizeWidth}x${resizeHeight})`);
-    image = image.resize(resizeWidth, resizeHeight, { fit: 'cover' });
-
-    console.log('Step 2: Detecting face');
-    inputBuffer = await image.toBuffer();
-    img = await loadImage(inputBuffer);
-    detections = await faceapi.detectSingleFace(img as any).withFaceLandmarks();
+    // Step 2: Detect face in original image
+    console.log('Detecting face');
+    const inputBuffer = await image.toBuffer();
+    const img = await loadImage(inputBuffer);
+    const detections = await faceapi.detectSingleFace(img as any).withFaceLandmarks();
 
     if (detections) {
       console.log('Face detected. Adjusting image...');
       const faceBox = detections.detection.box;
       console.log(`Face box: x=${faceBox.x}, y=${faceBox.y}, width=${faceBox.width}, height=${faceBox.height}`);
       
+      // Step 3: Calculate crop area based on face position
       const faceHeight = faceBox.height;
-      const estimatedHeadHeight = faceHeight * 1.5;
-      console.log(`Estimated head height: ${estimatedHeadHeight}`);
+      const estimatedHeadHeight = faceHeight * 1.5; // Increased to account for hair
+      const targetHeightRatio = 0.85; // Face should occupy 85% of image height
       
-      // Adjust scale factor to make head height 70% of image height
-      const scaleFactor = (resizeHeight * 0.7) / estimatedHeadHeight;
-      console.log(`Scale factor: ${scaleFactor}`);
-      
-      const newWidth = Math.round(resizeWidth * scaleFactor);
-      const newHeight = Math.round(resizeHeight * scaleFactor);
-      console.log(`New dimensions after scaling: ${newWidth}x${newHeight}`);
+      const idealHeight = estimatedHeadHeight / targetHeightRatio;
+      const idealWidth = idealHeight * (35 / 45);
       
       const centerX = faceBox.x + faceBox.width / 2;
       const centerY = faceBox.y + faceBox.height / 2;
-      let cropLeft = Math.max(0, Math.round(centerX * scaleFactor - 350 / 2));
-      let cropTop = Math.max(0, Math.round(centerY * scaleFactor - 450 * 0.4)); // Position face slightly above center
+      let cropLeft = Math.max(0, Math.round(centerX - idealWidth / 2));
+      let cropTop = Math.max(0, Math.round(centerY - idealHeight * 0.5)); // Center the face vertically
       
       // Ensure crop area is within bounds
-      cropLeft = Math.min(cropLeft, newWidth - 350);
-      cropTop = Math.min(cropTop, newHeight - 450);
+      cropLeft = Math.min(cropLeft, originalWidth - idealWidth);
+      cropTop = Math.min(cropTop, originalHeight - idealHeight);
       
-      console.log(`Crop box: left=${cropLeft}, top=${cropTop}, width=350, height=450`);
+      console.log(`Crop box: left=${cropLeft}, top=${cropTop}, width=${idealWidth}, height=${idealHeight}`);
       
-      image = image.resize(newWidth, newHeight);
+      // Step 4: Crop
+      image = image.extract({ left: cropLeft, top: cropTop, width: Math.round(idealWidth), height: Math.round(idealHeight) });
       
-      // Only extract if the crop area is valid
-      if (cropLeft >= 0 && cropTop >= 0 && cropLeft + 350 <= newWidth && cropTop + 450 <= newHeight) {
-        image = image.extract({ 
-          left: cropLeft,
-          top: cropTop,
-          width: 350,
-          height: 450 
-        });
+      // Step 5: Resize if necessary to meet minimum dimensions
+      const cropMetadata = await image.metadata();
+      const cropWidth = cropMetadata.width!;
+      const cropHeight = cropMetadata.height!;
+      
+      if (cropWidth < 350 || cropHeight < 450) {
+        const scaleFactor = Math.max(350 / cropWidth, 450 / cropHeight);
+        const newWidth = Math.round(cropWidth * scaleFactor);
+        const newHeight = Math.round(cropHeight * scaleFactor);
+        image = image.resize(newWidth, newHeight);
+        console.log(`Resized to meet minimum dimensions: ${newWidth}x${newHeight}`);
       } else {
-        console.warn('Invalid crop area. Falling back to center crop.');
-        image = image.resize(350, 450, { fit: 'cover' });
+        console.log(`Final image size: ${cropWidth}x${cropHeight}`);
       }
     } else {
       console.warn('No face detected. Proceeding with center crop.');
-      image = image.resize(350, 450, { fit: 'cover' });
+      // Fallback to center crop if no face is detected
+      const cropDimension = Math.min(originalWidth, originalHeight);
+      const cropLeft = Math.round((originalWidth - cropDimension) / 2);
+      const cropTop = Math.round((originalHeight - cropDimension) / 2);
+      
+      image = image.extract({ left: cropLeft, top: cropTop, width: cropDimension, height: cropDimension })
+                   .resize(450, 450)  // Square crop
+                   .extend({ top: 0, bottom: 87, left: 0, right: 0, background: { r: 255, g: 255, b: 255, alpha: 1 } }); // Extend to 35:45 ratio
     }
-
-    console.log('Final image size: 350x450');
 
     const processedBuffer = await image.toBuffer();
     console.log('Photo processing completed successfully');
     return processedBuffer.toString('base64');
   } catch (error) {
     console.error('Error in processPhoto:', error);
-    // Log the full error stack trace
     if (error instanceof Error) {
       console.error(error.stack);
     }
